@@ -1,30 +1,72 @@
-const counter = (state = 0, action) => {
+const todos = (state = 0, action) => {
 	switch(action.type){
-  	  case 'INCREMENT': return state+1;
-      case 'DECREMENT': return state-1;
+  	  case 'ADDTODO': return [...state,{
+					id: action.id,
+					text: action.text,
+					completed: false
+			}];
+      case 'TOGGLETODO': return state.map(todo => {
+				if(todo.id != action.id){
+					return todo;
+				}
+
+				return {
+					id: todo.id,
+					text: todo.text,
+					completed: !todo.completed
+				}
+			});
       default: return state;
     }
 };
 
-const Counter = ({value, onIncrement, onDecrement}) => (
-	<div>
-  	  <h1>{value}</h1>
-      <button onClick = {onIncrement}>+</button>
-      <button onClick = {onDecrement}>-</button>
-	</div>
-);
-
 const {createStore} = Redux;
-const store = createStore(counter);
+const store = createStore(todos);
 
-const render = () => {
-	ReactDOM.render(
-  	<Counter value={store.getState()}
-             onIncrement={() => store.dispatch({type:'INCREMENT'})}
-             onDecrement={() => store.dispatch({type:'DECREMENT'})} />,
-    document.getElementById('root')
-  );
-};
+const testToggleTodos = () => {
+	const stateBefore = [{
+		id: 0,
+		text: "Learn Redux",
+		completed: false
+	}];
 
-store.subscribe(render);
-render();
+	const stateAfter = [{
+		id: 0,
+		text: "Learn Redux",
+		completed: true
+	}];
+
+	const action = {
+		id: 0,
+		type: 'TOGGLETODO',
+	}
+
+	deepFreeze(stateBefore);
+	deepFreeze(action);
+
+	expect(todos(stateBefore,action)).toEqual(stateAfter);
+}
+
+const testAddTodos = () => {
+	const stateBefore = [];
+
+	const stateAfter = [{
+		id: 0,
+		text: "Learn Redux",
+		completed: false
+	}];
+	const action = {
+		type: 'ADDTODO',
+		id: 0,
+		text: "Learn Redux"
+	}
+
+	deepFreeze(stateBefore);
+	deepFreeze(action);
+
+	expect(todos(stateBefore,action)).toEqual(stateAfter)
+}
+
+testAddTodos();
+testToggleTodos();
+console.log('All tests passed');
