@@ -65,7 +65,6 @@ const testToggleTodos = () => {
 
 	deepFreeze(stateBefore);
 	deepFreeze(action);
-	console.l
 	expect(todos(stateBefore,action)).toEqual(stateAfter);
 }
 
@@ -91,12 +90,50 @@ const testAddTodos = () => {
 
 testAddTodos();
 testToggleTodos();
-console.log(store.getState().todos);
 console.log('All tests passed');
 
+const FilterLink = ({filter,children,currentFilter}) => {
+	if(filter === currentFilter) {
+		return (
+			<span>{children}</span>
+		);
+	}
+	return (
+		<a href='#' onClick={e => {
+				e.preventDefault();
+				store.dispatch({
+					type: 'SET_VISIBILITY_FILTER',
+					filter: {filter}
+				});
+			}}>
+			{children}
+		</a>
+	);
+};
+
+const getVisibleTodos = (todos, filter) => {
+	console.log(filter);
+
+	switch(filter) {
+		case 'SHOW_COMPLETED':
+			return todos.filter(t => t.completed);
+		case 'SHOW_ACTIVE':
+			return todos.filter(t => !t.completed);
+		default:
+			return todos;
+	}
+}
+
 let newTodoId = 0;
+
 class TodoApp extends Component {
 	render() {
+		let filter = this.props.visibilityFilter;
+		if(this.props.visibilityFilter.filter != undefined){
+			filter = this.props.visibilityFilter.filter
+		}
+		const visibletodos = getVisibleTodos(this.props.todos, filter);
+		console.log(visibletodos);
 		return (
 			<div>
 				<textarea ref = {node => {
@@ -109,18 +146,42 @@ class TodoApp extends Component {
 						this.input.value = '';
 				}}>Add</button>
 				<ul>
-					{this.props.todos.map(todo =>
-						<li key={todo.id}>{todo.text}</li>
+					{visibletodos.map(todo =>
+						<li onClick={() => {
+								store.dispatch({
+									type:'TOGGLETODO',
+									id:todo.id
+								});
+							}}
+							key={todo.id}
+							style={{textDecoration:
+								todo.completed ? 'line-through':'none'}}>
+							{todo.text}</li>
 					)}
 				</ul>
+				<p>
+					Show:
+					{' '}
+					<FilterLink filter='SHOW_ALL' currentFilter = {filter}>
+						All
+					</FilterLink>
+					{' '}
+					<FilterLink filter='SHOW_COMPLETED' currentFilter = {filter}>
+						Completed
+					</FilterLink>
+					{' '}
+					<FilterLink filter='SHOW_ACTIVE' currentFilter = {filter}>
+						Active
+					</FilterLink>
+				</p>
 			</div>
 		);
 	}
 }
 
 const render = () => {
-	ReactDOM.render(<TodoApp todos={store.getState().todos} />, document.getElementById('root'));
-}
+	ReactDOM.render(<TodoApp {...store.getState()} />, document.getElementById('root'));
+};
 
 store.subscribe(render);
 render();
