@@ -32,8 +32,8 @@ const visibilityFilter = (state = 'SHOW_ALL', action) => {
 const {createStore} = Redux;
 const {combineReducers} = Redux;
 const {Component} = React;
+const {Provider} = ReactRedux;
 const todoApp = combineReducers({todos, visibilityFilter});
-const store = createStore(todoApp);
 
 const testToggleTodos = () => {
 	const stateBefore = [{
@@ -109,7 +109,9 @@ const Link = ({active,children,onClick}) => {
 };
 
 class FilterLink extends Component{
+
 	componentDidMount() {
+		const {store} = this.context;
 		store.subscribe(()=>{
 			this.forceUpdate();
 		});
@@ -120,6 +122,7 @@ class FilterLink extends Component{
 	}
 
 	render(){
+		const {store} = this.context;
 		let state = store.getState();
 		return(
 			<Link active = {this.props.filter === state.visibilityFilter}
@@ -132,6 +135,9 @@ class FilterLink extends Component{
 		);
 	}
 }
+FilterLink.contextTypes = {
+	store: React.PropTypes.object
+};
 
 const getVisibleTodos = (todos, filter) => {
 	console.log(filter);
@@ -163,7 +169,9 @@ const Todos = ({todos,onClick}) => {
 };
 
 class VisibleList extends Component {
+
 	componentDidMount() {
+		const {store} = this.context;
 		store.subscribe(()=>{
 			this.forceUpdate();
 		});
@@ -174,9 +182,8 @@ class VisibleList extends Component {
 	}
 
 	render(){
+		const {store} = this.context;
 		let state = store.getState();
-
-
 		return(
 			<Todos todos={getVisibleTodos(state.todos,state.visibilityFilter)}
 				onClick={id=>{
@@ -188,8 +195,11 @@ class VisibleList extends Component {
 		);
 	}
 }
+VisibleList.contextTypes = {
+	store: React.PropTypes.object
+}
 
-const AddButton = ({onClick}) => {
+const AddButton = ({onClick},{store}) => {
 	let input;
 	return(
 		<div>
@@ -204,6 +214,9 @@ const AddButton = ({onClick}) => {
 				}}>Add</button>
 		</div>
 	);
+};
+AddButton.contextTypes = {
+	store: React.PropTypes.object
 };
 
 const VisFilt = () => {
@@ -235,9 +248,8 @@ const TodoApp = ({visibilityFilter,todos}) => (
 	</div>
 );
 
-const render = () => {
-	ReactDOM.render(<TodoApp {...store.getState()} />, document.getElementById('root'));
-};
 
-store.subscribe(render);
-render();
+ReactDOM.render(<Provider store={createStore(todoApp)}>
+									<TodoApp />
+								</Provider>,
+								document.getElementById('root'));
