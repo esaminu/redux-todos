@@ -92,8 +92,8 @@ testAddTodos();
 testToggleTodos();
 console.log('All tests passed');
 
-const FilterLink = ({filter,children,currentFilter,onClick}) => {
-	if(filter === currentFilter) {
+const Link = ({active,children,onClick}) => {
+	if(active) {
 		return (
 			<span>{children}</span>
 		);
@@ -101,12 +101,37 @@ const FilterLink = ({filter,children,currentFilter,onClick}) => {
 	return (
 		<a href='#' onClick={e => {
 				e.preventDefault();
-				onClick(filter);
+				onClick();
 			}}>
 			{children}
 		</a>
 	);
 };
+
+class FilterLink extends Component{
+	componentDidMount() {
+		store.subscribe(()=>{
+			this.forceUpdate();
+		});
+	}
+
+	componentWillUnmount() {
+		this.unsubscribe();
+	}
+
+	render(){
+		let state = store.getState();
+		return(
+			<Link active = {this.props.filter === state.visibilityFilter}
+				onClick={()=>{
+					store.dispatch({
+						type: 'SET_VISIBILITY_FILTER',
+						filter: this.props.filter
+					});
+				}}>{this.props.children}</Link>
+		);
+	}
+}
 
 const getVisibleTodos = (todos, filter) => {
 	console.log(filter);
@@ -121,17 +146,12 @@ const getVisibleTodos = (todos, filter) => {
 	}
 }
 
-const Todos = ({visibilityFilter,todos,toggle}) => {
-	let filter = visibilityFilter;
-	if(visibilityFilter.filter != undefined){
-		filter = visibilityFilter.filter
-	}
-	const visibletodos = getVisibleTodos(todos, filter);
+const Todos = ({todos,onClick}) => {
 	return(
 		<ul>
-			{visibletodos.map(todo =>
+			{todos.map(todo =>
 				<li onClick={() => {
-						toggle(todo.id);
+						onClick(todo.id);
 					}}
 					key={todo.id}
 					style={{textDecoration:
@@ -142,6 +162,33 @@ const Todos = ({visibilityFilter,todos,toggle}) => {
 	);
 };
 
+class VisibleList extends Component {
+	componentDidMount() {
+		store.subscribe(()=>{
+			this.forceUpdate();
+		});
+	}
+
+	componentWillUnmount() {
+		this.unsubscribe();
+	}
+
+	render(){
+		let state = store.getState();
+
+
+		return(
+			<Todos todos={getVisibleTodos(state.todos,state.visibilityFilter)}
+				onClick={id=>{
+					store.dispatch({
+						type:'TOGGLETODO',
+						id
+					});
+				}}/>
+		);
+	}
+}
+
 const AddButton = ({onClick}) => {
 	let input;
 	return(
@@ -150,31 +197,29 @@ const AddButton = ({onClick}) => {
 					input = node;
 				}}></textarea>
 			<button onClick={()=>{
-					onClick(input.value);
+				store.dispatch({type: 'ADDTODO',
+												text: input.value,
+												id: newTodoId++});
 					input.value = '';
 				}}>Add</button>
 		</div>
 	);
 };
 
-const VisFilt = ({visibilityFilter,onClick}) => {
-	let filter = visibilityFilter;
-	if(visibilityFilter.filter != undefined){
-		filter = visibilityFilter.filter
-	}
+const VisFilt = () => {
 	return (
 		<p>
 			Show:
 			{' '}
-			<FilterLink filter='SHOW_ALL' currentFilter = {filter} onClick={onClick}>
+			<FilterLink filter='SHOW_ALL'>
 				All
 			</FilterLink>
 			{' '}
-			<FilterLink filter='SHOW_COMPLETED' currentFilter = {filter} onClick={onClick}>
+			<FilterLink filter='SHOW_COMPLETED'>
 				Completed
 			</FilterLink>
 			{' '}
-			<FilterLink filter='SHOW_ACTIVE' currentFilter = {filter} onClick={onClick}>
+			<FilterLink filter='SHOW_ACTIVE'>
 				Active
 			</FilterLink>
 		</p>
@@ -184,25 +229,9 @@ const VisFilt = ({visibilityFilter,onClick}) => {
 let newTodoId = 0;
 const TodoApp = ({visibilityFilter,todos}) => (
 	<div>
-		<AddButton onClick={input => {
-				store.dispatch({type: 'ADDTODO',
-												text: input,
-												id: newTodoId++});
-		}} />
-		<Todos visibilityFilter={visibilityFilter}
-			todos={todos}
-			toggle={id => {
-				store.dispatch({
-					type:'TOGGLETODO',
-					id
-				});
-			}}/>
-		<VisFilt visibilityFilter={visibilityFilter}
-			onClick={(filter) => {
-				store.dispatch({
-				type:'SET_VISIBILITY_FILTER',
-				filter
-			})}} />
+		<AddButton />
+		<VisibleList />
+		<VisFilt />
 	</div>
 );
 
